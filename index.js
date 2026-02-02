@@ -8,6 +8,7 @@ app.use(express.json());
 app.use("/api/events", require("./routes/events.routes"));
 app.use("/api/members", require("./routes/members.routes"));
 app.use("/api/event-roles", require("./routes/eventRoles.routes"));
+app.use("/api/work-log", require("./routes/workLog.routes"));
 app.use("/api/participants", require("./routes/participants.routes"));
 app.use("/api/volunteers", require("./routes/volunteers.routes"));
 app.use("/api/attendance", require("./routes/attendance.routes"));
