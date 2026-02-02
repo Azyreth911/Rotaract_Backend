@@ -1,8 +1,11 @@
 const express = require("express");
 const router = express.Router();
+const {
+  markAttendance,
+  getAttendanceByEvent,
+} = require("../controllers/attendance.controller");
 
-router.get("/", (req, res) => {
-  res.json({ message: "Events API ready" });
-});
+router.post("/", markAttendance);
+router.get("/:event_id", getAttendanceByEvent);
 
 module.exports = router;
