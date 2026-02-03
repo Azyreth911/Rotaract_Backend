@@ -1,8 +1,12 @@
 const express = require("express");
 const router = express.Router();
 
-router.get("/", (req, res) => {
-  res.json({ message: "Events API ready" });
-});
+const {
+  generateBestRotaracter,
+  getBestRotaracter,
+} = require("../controllers/bestRotaracter.controller");
+
+router.get("/", getBestRotaracter);
+router.post("/generate", generateBestRotaracter);
 
 module.exports = router;
