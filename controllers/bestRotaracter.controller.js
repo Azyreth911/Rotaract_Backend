@@ -4,10 +4,13 @@ const generateBestRotaracter = async (req, res) => {
   const { month, year } = req.body;
 
   if (!month || !year) {
-    return res.status(400).json({ error: "month and year are required" });
+    return res.status(400).json({
+      error: "month and year are required",
+    });
   }
 
   try {
+    // 1️⃣ Calculate best rotaracter
     const result = await pool.query(`
       SELECT
         m.member_id,
@@ -37,23 +40,32 @@ const generateBestRotaracter = async (req, res) => {
 
     const winner = result.rows[0];
 
-    await pool.query(
+    // 2️⃣ Insert or update + detect created vs updated
+    const dbRes = await pool.query(
       `
       INSERT INTO best_rotaracter (member_id, month, year, score)
       VALUES ($1, $2, $3, $4)
       ON CONFLICT (member_id, month, year)
       DO UPDATE SET score = EXCLUDED.score
+      RETURNING xmax = 0 AS created
       `,
       [winner.member_id, month, year, winner.score]
     );
 
-    res.status(201).json({
-      message: "Best Rotaracter generated",
+    const created = dbRes.rows[0].created;
+
+    // 3️⃣ Correct HTTP status
+    res.status(created ? 201 : 200).json({
+      message: created
+        ? "Best Rotaracter generated"
+        : "Best Rotaracter recalculated",
       data: winner,
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to generate best rotaracter" });
+    res.status(500).json({
+      error: "Failed to generate best rotaracter",
+    });
   }
 };
 
@@ -61,7 +73,9 @@ const getBestRotaracter = async (req, res) => {
   const { month, year } = req.query;
 
   if (!month || !year) {
-    return res.status(400).json({ error: "month and year are required" });
+    return res.status(400).json({
+      error: "month and year are required",
+    });
   }
 
   try {
@@ -79,16 +93,21 @@ const getBestRotaracter = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "No best rotaracter found" });
+      return res.status(404).json({
+        error: "No best rotaracter found",
+      });
     }
 
     res.json(result.rows[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Failed to fetch best rotaracter" });
+    res.status(500).json({
+      error: "Failed to fetch best rotaracter",
+    });
   }
 };
 
-
-module.exports = { generateBestRotaracter, getBestRotaracter };
- 
+module.exports = {
+  generateBestRotaracter,
+  getBestRotaracter,
+};
