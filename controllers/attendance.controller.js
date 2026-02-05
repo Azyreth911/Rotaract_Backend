@@ -63,7 +63,47 @@ const getAttendanceByEvent = async (req, res) => {
   }
 };
 
+// Update attendance
+const updateAttendance = async (req, res) => {
+  const { event_id, member_id, attendance_status } = req.body;
+
+  if (!event_id || !member_id || !attendance_status) {
+    return res.status(400).json({
+      error: "event_id, member_id, attendance_status are required",
+    });
+  }
+
+  try {
+    const result = await pool.query(
+      `
+      UPDATE event_attendance
+      SET attendance_status = $3
+      WHERE event_id = $1 AND member_id = $2
+      RETURNING *
+      `,
+      [event_id, member_id, attendance_status]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Attendance not found for this member",
+      });
+    }
+
+    res.status(200).json({
+      message: "Attendance updated",
+      data: result.rows[0],
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Failed to update attendance",
+    });
+  }
+};
+
 module.exports = {
   markAttendance,
-  getAttendanceByEvent,
+  updateAttendance,
+  getAttendanceByEvent  
 };
