@@ -102,8 +102,40 @@ const updateAttendance = async (req, res) => {
   }
 };
 
+// Attendance summary for an event
+const getAttendanceSummary = async (req, res) => {
+  const { event_id } = req.params;
+
+  try {
+    const result = await pool.query(
+      `
+      SELECT
+        COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE attendance_status = 'present') AS present,
+        COUNT(*) FILTER (WHERE attendance_status = 'absent') AS absent
+      FROM event_attendance
+      WHERE event_id = $1
+      `,
+      [event_id]
+    );
+
+    res.json({
+      event_id: Number(event_id),
+      total: Number(result.rows[0].total),
+      present: Number(result.rows[0].present),
+      absent: Number(result.rows[0].absent),
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      error: "Failed to fetch attendance summary",
+    });
+  }
+};
+
 module.exports = {
   markAttendance,
   updateAttendance,
-  getAttendanceByEvent  
+  getAttendanceByEvent,
+  getAttendanceSummary
 };
