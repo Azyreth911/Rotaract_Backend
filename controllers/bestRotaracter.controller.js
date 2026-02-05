@@ -45,12 +45,10 @@ const generateBestRotaracter = async (req, res) => {
       `
       INSERT INTO best_rotaracter (member_id, month, year, score)
       VALUES ($1, $2, $3, $4)
-      ON CONFLICT (member_id, month, year)
-      DO UPDATE SET score = EXCLUDED.score
-      RETURNING xmax = 0 AS created
       `,
       [winner.member_id, month, year, winner.score]
     );
+
 
     const created = dbRes.rows[0].created;
 
@@ -61,7 +59,14 @@ const generateBestRotaracter = async (req, res) => {
         : "Best Rotaracter recalculated",
       data: winner,
     });
-  } catch (err) {
+  } 
+  catch (err) {
+    // unique constraint violation
+    if (err.code === "23505") {
+      return res.status(409).json({
+        error: "Best Rotaracter already generated for this month and year",
+      });
+    }
     console.error(err);
     res.status(500).json({
       error: "Failed to generate best rotaracter",

@@ -6,6 +6,6 @@ const {
 } = require("../controllers/workLog.controller");
 
 router.post("/", addWorkLog);
-router.get("/:event_id", getWorkLogsByEvent);
+router.get("/event/:event_id", getWorkLogsByEvent);
 
 module.exports = router;

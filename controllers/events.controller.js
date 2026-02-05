@@ -70,9 +70,86 @@ const createEvent = async (req, res) => {
   }
 };
 
+const getEventDashboard = async (req, res) => {
+  const { eventId } = req.params;
+
+  try {
+    // 1️⃣ Event info
+    const eventResult = await pool.query(
+      `SELECT event_id, title, start_time, end_time, venue, status
+       FROM events
+       WHERE event_id = $1`,
+      [eventId]
+    );
+
+    if (eventResult.rows.length === 0) {
+      return res.status(404).json({ error: "Event not found" });
+    }
+
+    // 2️⃣ Attendance summary
+    const attendanceResult = await pool.query(
+      `
+      SELECT
+        COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE attendance_status = 'present') AS present,
+        COUNT(*) FILTER (WHERE attendance_status = 'absent') AS absent
+      FROM event_attendance
+      WHERE event_id = $1
+      `,
+      [eventId]
+    );
+
+    // 3️⃣ Work log summary
+    const workLogResult = await pool.query(
+      `
+      SELECT
+        COALESCE(SUM(work_minutes), 0) AS total_minutes
+      FROM event_work_log
+      WHERE event_id = $1
+      `,
+      [eventId]
+    );
+
+    const memberWorkLogs = await pool.query(
+      `
+      SELECT
+        m.member_id,
+        m.name,
+        COALESCE(SUM(wl.work_minutes), 0) AS total_minutes
+      FROM members m
+      LEFT JOIN event_work_log wl
+        ON wl.member_id = m.member_id
+        AND wl.event_id = $1
+      GROUP BY m.member_id, m.name
+      ORDER BY total_minutes DESC
+      `,
+      [eventId]
+    );
+
+    res.json({
+      event: eventResult.rows[0],
+      attendance: {
+        total: Number(attendanceResult.rows[0].total),
+        present: Number(attendanceResult.rows[0].present),
+        absent: Number(attendanceResult.rows[0].absent),
+      },
+      work_log: {
+        total_minutes: Number(workLogResult.rows[0].total_minutes),
+        members: memberWorkLogs.rows
+      }
+    });
+
+  } 
+  catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to load event dashboard" });
+  }
+};
+
 // Export controller functions
 module.exports = {
   getEvents,
   getEventById,
   createEvent,
+  getEventDashboard
 };
